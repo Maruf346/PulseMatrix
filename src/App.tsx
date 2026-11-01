@@ -136,7 +136,7 @@ export default function App() {
   return (
     <div
       id="top"
-      className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-150"
+      className="min-h-screen bg-[#F3F6FC] dark:bg-[#060913] bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(99,102,241,0.10),transparent)] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-150"
     >
       {/* Collapsible Left Sidebar + Workspace Top Bar Shell */}
       <TopHeader

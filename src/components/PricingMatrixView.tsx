@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
   ArrowRight,
   BarChart3,
   CheckCircle2,
@@ -8,10 +17,11 @@ import {
   ChevronRight,
   ExternalLink,
   Filter,
-  Info,
   Maximize2,
   Minimize2,
   RotateCcw,
+  ShieldAlert,
+  Sparkles,
   TrendingDown,
   TrendingUp,
   X,
@@ -70,6 +80,14 @@ const TIER_OPTIONS: Array<{ id: TierId | 'all'; label: string }> = [
   { id: 'pro', label: 'Pro' },
   { id: 'team', label: 'Team' },
   { id: 'enterprise', label: 'Enterprise' },
+];
+
+const VENDOR_BADGE_COLORS = [
+  'bg-amber-500',
+  'bg-rose-500',
+  'bg-emerald-500',
+  'bg-cyan-500',
+  'bg-fuchsia-500',
 ];
 
 export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
@@ -153,11 +171,11 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
       diff.changeType === 'price_hike' || diff.changeType === 'limit_cut';
 
     const colorClass = isHikeOrCut
-      ? 'bg-amber-50/90 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200/90 dark:border-amber-800/80 hover:bg-amber-100/80 dark:hover:bg-amber-900/60'
+      ? 'bg-rose-50/90 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border-rose-200/90 dark:border-rose-800/80 hover:bg-rose-100/80 dark:hover:bg-rose-900/60'
       : 'bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200/90 dark:border-emerald-800/80 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/60';
 
     return (
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <span className="text-[11px] font-mono tabular-nums line-through text-slate-400 dark:text-slate-500">
           {overrideOldPrice || diff.previousValue}
         </span>
@@ -173,7 +191,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
               competitorId,
             });
           }}
-          className={`inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium border rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${colorClass}`}
+          className={`inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold border rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${colorClass}`}
         >
           {isHikeOrCut ? (
             <TrendingUp className="w-3 h-3 shrink-0" />
@@ -191,124 +209,187 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
   const hasNoResults = visibleTiers.length === 0 && visibleFeatures.length === 0;
 
   return (
-    <div className="space-y-4">
-      {/* Recharts 6-Month Base Pricing Trend Comparison Chart */}
-      <PricingTrendChart
-        ourProduct={ourProduct}
-        competitors={competitors}
-        billingCycle={billingCycle}
-        selectedTier={selectedTier}
-      />
-
-      {/* Interactive Visual Price & TCO Comparison Chart Strip */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/90 rounded-xl p-4 sm:p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800/80">
-          <div className="flex items-center gap-2.5">
-            <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-            <div>
-              <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                Real-World Monthly TCO Benchmark ({teamSize} Engineers · {bandwidthTb} TB Egress)
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Includes base Pro seats + outbound bandwidth overages + required CI/CD & log add-ons ({billingCycle === 'annual' ? 'Annual -20%' : 'Monthly'} rates).
-              </p>
-            </div>
-          </div>
-
-          {/* Interactive Team Size & Bandwidth Selectors */}
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <div className="inline-flex items-center p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/80 rounded-lg">
-              {[5, 12, 25].map((seats) => (
-                <button
-                  key={seats}
-                  type="button"
-                  onClick={() => setTeamSize(seats)}
-                  className={`px-2.5 py-1 text-xs font-mono rounded-md transition-colors cursor-pointer ${
-                    teamSize === seats
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold shadow-2xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {seats} Seats
-                </button>
-              ))}
-            </div>
-
-            <div className="inline-flex items-center p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/80 rounded-lg">
-              {[1, 2, 5].map((tb) => (
-                <button
-                  key={tb}
-                  type="button"
-                  onClick={() => setBandwidthTb(tb)}
-                  className={`px-2.5 py-1 text-xs font-mono rounded-md transition-colors cursor-pointer ${
-                    bandwidthTb === tb
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold shadow-2xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {tb} TB Egress
-                </button>
-              ))}
-            </div>
-          </div>
+    <div className="space-y-5">
+      {/* Side-by-Side Executive Visual Analytics Grid (Recharts Trend + Stacked TCO BarChart) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        {/* Left 7 Columns: 6-Month Base Price Trajectory Chart */}
+        <div className="xl:col-span-7">
+          <PricingTrendChart
+            ourProduct={ourProduct}
+            competitors={competitors}
+            billingCycle={billingCycle}
+            selectedTier={selectedTier}
+          />
         </div>
 
-        {/* Animated Horizontal TCO Bars */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {tcoBars.map((bar) => (
-            <div
-              key={bar.id}
-              className={`p-3.5 rounded-xl border transition-colors ${
-                bar.isOurProduct
-                  ? 'bg-indigo-50/40 dark:bg-indigo-950/30 border-indigo-200/90 dark:border-indigo-800/80'
-                  : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800'
-              }`}
-            >
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                  {bar.name}
-                </span>
-                <span className="text-base font-bold font-mono text-slate-900 dark:text-white tabular-nums">
-                  ${bar.totalMonthlyTco.toLocaleString()}/mo
-                </span>
+        {/* Right 5 Columns: Interactive Monthly TCO Stacked BarChart & Simulator */}
+        <section
+          aria-label="Interactive Monthly TCO Breakdown Chart"
+          className="xl:col-span-5 relative overflow-hidden bg-white dark:bg-[#0E1422] border border-slate-200/85 dark:border-slate-800/90 rounded-2xl p-4 sm:p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-6px_rgba(15,23,42,0.05)] flex flex-col justify-between"
+        >
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 via-indigo-500 to-emerald-500" />
+
+          {/* Header & Simulator Selectors */}
+          <div className="flex flex-col gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-800/80">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-950/70 border border-cyan-200/70 dark:border-cyan-800/70 flex items-center justify-center shrink-0">
+                  <BarChart3 className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Monthly TCO Breakdown ({teamSize} Seats · {bandwidthTb} TB)
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Stacked Pro seats vs. egress overage & add-on tax ({billingCycle === 'annual' ? 'Annual -20%' : 'Monthly'}).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Team Size & Bandwidth Selectors */}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="inline-flex items-center p-0.5 bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 rounded-xl">
+                {[5, 12, 25].map((seats) => (
+                  <button
+                    key={seats}
+                    type="button"
+                    onClick={() => setTeamSize(seats)}
+                    className={`px-2.5 py-1 text-xs font-mono rounded-lg transition-all cursor-pointer ${
+                      teamSize === seats
+                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-semibold shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {seats} Seats
+                  </button>
+                ))}
               </div>
 
-              {/* Progress Bar Track */}
-              <div className="mt-2 h-2 w-full bg-slate-200/80 dark:bg-slate-700/70 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: bar.percentOfMax / 100 }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-                  style={{ transformOrigin: 'left' }}
-                  className={`h-full rounded-full ${
-                    bar.isOurProduct
-                      ? 'bg-indigo-600 dark:bg-indigo-500'
-                      : 'bg-slate-500 dark:bg-slate-400'
-                  }`}
+              <div className="inline-flex items-center p-0.5 bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 rounded-xl">
+                {[1, 2, 5].map((tb) => (
+                  <button
+                    key={tb}
+                    type="button"
+                    onClick={() => setBandwidthTb(tb)}
+                    className={`px-2.5 py-1 text-xs font-mono rounded-lg transition-all cursor-pointer ${
+                      bandwidthTb === tb
+                        ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 font-semibold shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {tb} TB Egress
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Stacked Recharts BarChart */}
+          <div className="h-44 w-full mt-3" data-testid="tco-stacked-barchart">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={tcoBars}
+                margin={{ top: 8, right: 8, left: -10, bottom: 0 }}
+                barSize={32}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#94A3B8"
+                  strokeOpacity={0.2}
                 />
-              </div>
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `$${v}`}
+                  tick={{ fill: '#64748B', fontSize: 11, fontFamily: 'JetBrains Mono' }}
+                />
+                <RechartsTooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || payload.length === 0) return null;
+                    const item = tcoBars.find((b) => b.name === label);
+                    return (
+                      <div className="bg-[#0B0F19]/95 text-white border border-slate-700 rounded-xl p-3 shadow-2xl text-xs space-y-1 font-mono tabular-nums">
+                        <div className="font-sans font-bold text-white border-b border-slate-800 pb-1">
+                          {label} · Total ${item?.totalMonthlyTco}/mo
+                        </div>
+                        <div className="flex justify-between gap-4 text-indigo-300">
+                          <span>Base Seats ({teamSize}):</span>
+                          <span>${item?.seatCost}/mo</span>
+                        </div>
+                        <div className="flex justify-between gap-4 text-amber-300">
+                          <span>Egress & Add-ons:</span>
+                          <span>${item?.bandwidthOverageCost}/mo</span>
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar
+                  dataKey="seatCost"
+                  name="Base Seat Cost"
+                  stackId="tco"
+                  fill="#6366F1"
+                  radius={[0, 0, 4, 4]}
+                  isAnimationActive={false}
+                />
+                <Bar
+                  dataKey="bandwidthOverageCost"
+                  name="Egress & Add-on Tax"
+                  stackId="tco"
+                  fill="#F59E0B"
+                  radius={[6, 6, 0, 0]}
+                  isAnimationActive={false}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-              <div className="mt-2 flex items-center justify-between text-[11px] font-mono tabular-nums text-slate-500 dark:text-slate-400">
-                <span>
-                  Seats ${bar.seatCost} · Egress ${bar.bandwidthOverageCost}
-                </span>
-                {bar.isOurProduct ? (
-                  <span className="text-indigo-600 dark:text-indigo-400 font-semibold">
-                    Lowest TCO
+          {/* Compact TCO Savings Cards Strip */}
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {tcoBars.map((bar) => (
+              <div
+                key={bar.id}
+                className={`p-2 rounded-xl border text-xs ${
+                  bar.isOurProduct
+                    ? 'bg-indigo-50/70 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800'
+                    : 'bg-slate-50/80 dark:bg-slate-800/50 border-slate-200/70 dark:border-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-bold text-slate-900 dark:text-white truncate text-[11px]">
+                    {bar.name}
                   </span>
-                ) : (
-                  <span className="text-emerald-700 dark:text-emerald-400 font-medium">
-                    Save ${bar.annualSavingsVsThis.toLocaleString()}/yr
-                  </span>
-                )}
+                </div>
+                <div className="font-mono font-extrabold text-sm text-slate-900 dark:text-white tabular-nums mt-0.5">
+                  ${bar.totalMonthlyTco}/mo
+                </div>
+                <div className="mt-0.5 text-[10px] font-mono tabular-nums truncate">
+                  {bar.isOurProduct ? (
+                    <span className="text-indigo-600 dark:text-indigo-400 font-semibold">
+                      ★ Lowest TCO
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                      Save ${bar.annualSavingsVsThis.toLocaleString()}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       {/* Controls & Filter Toolbar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/90 rounded-xl p-3.5 sm:p-4 space-y-3">
+      <div className="bg-white dark:bg-[#0E1422] border border-slate-200/85 dark:border-slate-800/90 rounded-2xl p-4 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Left: Billing Cycle Segmented Control & Tier Filter */}
           <div className="flex flex-wrap items-center gap-2.5">
@@ -316,7 +397,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
             <div
               role="group"
               aria-label="Billing Cycle Toggle"
-              className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/80 rounded-xl"
+              className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 rounded-xl"
             >
               {(['monthly', 'annual'] as const).map((cycle) => {
                 const active = billingCycle === cycle;
@@ -327,7 +408,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                     onClick={() => onBillingCycleChange(cycle)}
                     className={`relative px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer z-10 ${
                       active
-                        ? 'text-slate-900 dark:text-white font-semibold'
+                        ? 'text-white font-semibold'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
@@ -335,7 +416,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                       <motion.div
                         layoutId="billing-cycle-pill"
                         transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                        className="absolute inset-0 bg-white dark:bg-slate-900 rounded-lg shadow-2xs -z-10"
+                        className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-lg shadow-xs -z-10"
                       />
                     )}
                     {cycle === 'monthly'
@@ -350,7 +431,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
             <div
               role="group"
               aria-label="Tier Filter"
-              className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/80 rounded-xl overflow-x-auto max-w-full"
+              className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 rounded-xl overflow-x-auto max-w-full"
             >
               {TIER_OPTIONS.map((t) => {
                 const active = selectedTier === t.id;
@@ -384,16 +465,16 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
             <button
               type="button"
               onClick={() => setExpandAllDetails((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/70 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
               {expandAllDetails ? (
                 <>
-                  <Minimize2 className="w-3.5 h-3.5" />
+                  <Minimize2 className="w-3.5 h-3.5 text-indigo-500" />
                   <span>Compact Rows</span>
                 </>
               ) : (
                 <>
-                  <Maximize2 className="w-3.5 h-3.5" />
+                  <Maximize2 className="w-3.5 h-3.5 text-indigo-500" />
                   <span>Expand All Notes</span>
                 </>
               )}
@@ -401,7 +482,11 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
 
             <label
               htmlFor="toggle-changed-week"
-              className="inline-flex items-center gap-2.5 cursor-pointer select-none px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-50/70 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+              className={`inline-flex items-center gap-2.5 cursor-pointer select-none px-3 py-1.5 rounded-xl border transition-colors ${
+                changedOnly
+                  ? 'border-amber-400 bg-amber-50/90 dark:bg-amber-950/60 dark:border-amber-700 text-amber-900 dark:text-amber-200'
+                  : 'border-slate-200/80 dark:border-slate-700/80 bg-slate-50/70 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200'
+              }`}
             >
               <input
                 id="toggle-changed-week"
@@ -410,8 +495,8 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                 onChange={(e) => onToggleChangedOnly(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-8 h-4.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3.5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all relative peer-checked:bg-amber-600" />
-              <span className="text-xs font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap shrink-0">
+              <div className="w-8 h-4.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3.5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all relative peer-checked:bg-amber-500" />
+              <span className="text-xs font-semibold whitespace-nowrap shrink-0">
                 Show Only &ldquo;Changed This Week&rdquo;
               </span>
             </label>
@@ -432,9 +517,9 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                   key={category}
                   type="button"
                   onClick={() => onSelectCategory(category)}
-                  className={`relative px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer z-10 ${
+                  className={`relative px-3 py-1.5 text-xs font-medium rounded-xl transition-colors whitespace-nowrap shrink-0 cursor-pointer z-10 ${
                     active
-                      ? 'text-white dark:text-slate-950 font-semibold'
+                      ? 'text-white font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -442,7 +527,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                     <motion.div
                       layoutId="category-filter-pill"
                       transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                      className="absolute inset-0 bg-slate-900 dark:bg-slate-100 rounded-lg -z-10"
+                      className="absolute inset-0 bg-[#0B0F19] dark:bg-indigo-600 rounded-xl -z-10"
                     />
                   )}
                   {category}
@@ -459,7 +544,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
             <button
               type="button"
               onClick={() => setMobileCompetitorId('all')}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg whitespace-nowrap shrink-0 cursor-pointer ${
                 mobileCompetitorId === 'all'
                   ? 'bg-indigo-600 text-white'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
@@ -472,7 +557,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                 key={c.id}
                 type="button"
                 onClick={() => setMobileCompetitorId(c.id)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-2.5 py-1 text-xs font-medium rounded-lg whitespace-nowrap shrink-0 cursor-pointer ${
                   mobileCompetitorId === c.id
                     ? 'bg-indigo-600 text-white'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
@@ -487,9 +572,9 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
 
       {/* Empty Filter State */}
       {hasNoResults ? (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/90 rounded-xl p-12 text-center">
-          <Filter className="w-8 h-8 text-slate-400 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+        <div className="bg-white dark:bg-[#0E1422] border border-slate-200/85 dark:border-slate-800/90 rounded-2xl p-12 text-center">
+          <Filter className="w-8 h-8 text-indigo-500 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
             No pricing tiers or features match your active filters
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
@@ -498,89 +583,100 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
           <button
             type="button"
             onClick={onResetFilters}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-xl cursor-pointer"
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset All Matrix Filters</span>
           </button>
         </div>
       ) : (
-        /* High-Density Side-by-Side Comparison Matrix Table */
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/90 rounded-xl overflow-hidden">
+        /* High-Clarity Side-by-Side Comparison Matrix Table */
+        <div className="bg-white dark:bg-[#0E1422] border border-slate-200/85 dark:border-slate-800/90 rounded-2xl shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-6px_rgba(15,23,42,0.05)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left min-w-[780px]">
+            <table className="w-full border-collapse text-left min-w-[820px]">
               <thead>
-                <tr className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/60">
+                <tr className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/90 dark:bg-[#0B0F19]">
                   {/* Column 1: Sticky Feature/Tier Dimension Header */}
                   <th
                     scope="col"
-                    className="sticky left-0 z-20 bg-slate-50 dark:bg-slate-950 py-3.5 px-4 w-64 min-w-[230px] border-r border-slate-200/80 dark:border-slate-800 align-top"
+                    className="sticky left-0 z-20 bg-slate-50 dark:bg-[#0B0F19] py-4 px-4 w-64 min-w-[230px] border-r border-slate-200/80 dark:border-slate-800 align-top"
                   >
-                    <div className="text-xs font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
-                      Dimension / Capability
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Capability & Tier Matrix
                     </div>
-                    <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
-                      Click any row to toggle technical notes
+                    <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-1">
+                      Click any row to inspect technical notes
                     </div>
                   </th>
 
                   {/* Column 2: Pinned Highlight Column — Our Product */}
                   <th
                     scope="col"
-                    className="py-3.5 px-4 w-72 min-w-[240px] bg-indigo-50/40 dark:bg-indigo-950/35 border-r border-indigo-100/90 dark:border-indigo-900/60 align-top"
+                    className="py-4 px-4 w-72 min-w-[245px] bg-gradient-to-b from-indigo-50/90 to-indigo-50/30 dark:from-indigo-950/60 dark:to-indigo-950/20 border-r border-indigo-200/80 dark:border-indigo-900/60 align-top"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
-                        {ourProduct.name}
-                      </span>
-                      <span className="text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
-                        Our Product · Pinned
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 ring-4 ring-indigo-500/20" />
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                          {ourProduct.name}
+                        </span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-mono font-bold uppercase tracking-wider">
+                        Our Product
                       </span>
                     </div>
-                    <p className="text-[11px] font-normal text-slate-600 dark:text-slate-400 mt-0.5 truncate">
+                    <p className="text-[11px] font-normal text-slate-600 dark:text-slate-300 mt-1 truncate">
                       {ourProduct.tagline}
                     </p>
                   </th>
 
                   {/* Competitor Columns */}
-                  {displayedCompetitors.map((comp) => (
-                    <th
-                      key={comp.id}
-                      scope="col"
-                      className="py-3.5 px-4 w-72 min-w-[240px] border-r last:border-r-0 border-slate-200/70 dark:border-slate-800 align-top"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                          {comp.name}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => onOpenBattlecardForCompetitor(comp.id)}
-                          className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 inline-flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer"
-                        >
-                          <span>Battlecard</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
-                      </div>
-                      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
-                        <span>Win rate: {comp.winRateAgainst}%</span>
-                        <span aria-hidden="true">·</span>
-                        <span className="text-emerald-700 dark:text-emerald-400">
-                          {comp.winRateDelta}
-                        </span>
-                      </div>
-                    </th>
-                  ))}
+                  {displayedCompetitors.map((comp, idx) => {
+                    const badgeColor =
+                      VENDOR_BADGE_COLORS[idx % VENDOR_BADGE_COLORS.length];
+                    return (
+                      <th
+                        key={comp.id}
+                        scope="col"
+                        className="py-4 px-4 w-72 min-w-[245px] border-r last:border-r-0 border-slate-200/70 dark:border-slate-800 align-top"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`w-2.5 h-2.5 rounded-full shrink-0 ${badgeColor}`}
+                            />
+                            <span className="text-sm font-bold text-slate-900 dark:text-white">
+                              {comp.name}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => onOpenBattlecardForCompetitor(comp.id)}
+                            className="px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200/70 dark:border-indigo-800/70 text-[11px] font-semibold inline-flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer transition-colors"
+                          >
+                            <span>Battlecard</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
+                          <span>Win Rate: {comp.winRateAgainst}%</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                            {comp.winRateDelta}
+                          </span>
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/80 text-xs">
                 {/* SECTION 1: 4 PRICING TIERS */}
                 {visibleTiers.length > 0 && (
-                  <tr className="bg-slate-100/75 dark:bg-slate-800/60">
+                  <tr className="bg-slate-100/90 dark:bg-slate-900/90">
                     <td
                       colSpan={2 + displayedCompetitors.length}
-                      className="py-2 px-4 text-[11px] font-semibold text-slate-600 dark:text-slate-300 tracking-tight"
+                      className="py-2.5 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300"
                     >
                       Pricing Tiers & Packaging ({billingCycle === 'annual' ? 'Annual Billing · Save 20% Applied' : 'Standard Monthly Billing'})
                     </td>
@@ -602,17 +698,17 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                     <tr
                       key={rowKey}
                       onClick={() => toggleRowExpanded(rowKey)}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                      className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
                     >
                       {/* Sticky Left Column: Tier Name & Audience */}
-                      <td className="sticky left-0 z-10 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/90 py-3 px-4 border-r border-slate-200/80 dark:border-slate-800 align-top">
+                      <td className="sticky left-0 z-10 bg-white dark:bg-[#0E1422] group-hover:bg-slate-50 dark:group-hover:bg-slate-900 py-3.5 px-4 border-r border-slate-200/80 dark:border-slate-800 align-top">
                         <div className="flex items-center gap-1.5">
                           {isExpanded ? (
-                            <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <ChevronDown className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                           ) : (
                             <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           )}
-                          <span className="font-semibold text-slate-900 dark:text-slate-100 text-xs capitalize">
+                          <span className="font-bold text-slate-900 dark:text-white text-xs capitalize">
                             {tierId} Tier
                           </span>
                         </div>
@@ -622,24 +718,24 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                       </td>
 
                       {/* Pinned Our Product Price Cell */}
-                      <td className="py-3 px-4 bg-indigo-50/25 dark:bg-indigo-950/20 border-r border-indigo-100/90 dark:border-indigo-900/50 align-top">
+                      <td className="py-3.5 px-4 bg-indigo-50/35 dark:bg-indigo-950/25 border-r border-indigo-100/90 dark:border-indigo-900/50 align-top">
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-base font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+                          <span className="text-lg font-extrabold text-indigo-700 dark:text-indigo-300 font-mono tabular-nums">
                             {ourPriceObj.formattedPrice}
                           </span>
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                             {ourPriceObj.cadenceLabel}
                           </span>
                         </div>
-                        <div className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-0.5">
+                        <div className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
                           {ourTier.tierName} · {ourTier.perSeatNote}
                         </div>
 
                         {isExpanded && (
-                          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1.5 pt-1.5 border-t border-indigo-100/80 dark:border-indigo-900/50">
+                          <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-1.5 pt-1.5 border-t border-indigo-200/60 dark:border-indigo-900/50">
                             {ourTier.includedSummary}
                             {ourPriceObj.annualSavingsPerUnit > 0 && (
-                              <span className="block font-mono text-emerald-700 dark:text-emerald-400 mt-0.5">
+                              <span className="block font-mono text-emerald-700 dark:text-emerald-400 font-semibold mt-0.5">
                                 Annual discount saves ${ourPriceObj.annualSavingsPerUnit}/yr per seat
                               </span>
                             )}
@@ -669,10 +765,10 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                         return (
                           <td
                             key={`${comp.id}-${tierId}`}
-                            className="py-3 px-4 border-r last:border-r-0 border-slate-200/70 dark:border-slate-800 align-top"
+                            className="py-3.5 px-4 border-r last:border-r-0 border-slate-200/70 dark:border-slate-800 align-top"
                           >
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-base font-bold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                              <span className="text-lg font-bold text-slate-900 dark:text-white font-mono tabular-nums">
                                 {cPriceObj.formattedPrice}
                               </span>
                               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
@@ -706,10 +802,10 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
 
                 {/* SECTION 2: 12 CORE FEATURES & CAPABILITIES */}
                 {visibleFeatures.length > 0 && (
-                  <tr className="bg-slate-100/75 dark:bg-slate-800/60">
+                  <tr className="bg-slate-100/90 dark:bg-slate-900/90">
                     <td
                       colSpan={2 + displayedCompetitors.length}
-                      className="py-2 px-4 text-[11px] font-semibold text-slate-600 dark:text-slate-300 tracking-tight"
+                      className="py-2.5 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300"
                     >
                       Feature Parity, Infrastructure Limits & Security Benchmarks ({visibleFeatures.length} shown)
                     </td>
@@ -723,25 +819,25 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                     <tr
                       key={feat.id}
                       onClick={() => toggleRowExpanded(feat.id)}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                      className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
                     >
                       {/* Sticky Left Column: Feature Name & Category */}
-                      <td className="sticky left-0 z-10 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/90 py-3 px-4 border-r border-slate-200/80 dark:border-slate-800 align-top">
+                      <td className="sticky left-0 z-10 bg-white dark:bg-[#0E1422] group-hover:bg-slate-50 dark:group-hover:bg-slate-900 py-3.5 px-4 border-r border-slate-200/80 dark:border-slate-800 align-top">
                         <div className="flex items-start gap-1.5">
                           {isExpanded ? (
-                            <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                            <ChevronDown className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" />
                           ) : (
                             <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                           )}
                           <div>
-                            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
+                            <div className="font-bold text-slate-900 dark:text-white text-xs">
                               {feat.name}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-400">
                               {feat.category}
-                            </div>
+                            </span>
                             {isExpanded && (
-                              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 leading-relaxed">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
                                 {feat.description}
                               </p>
                             )}
@@ -750,15 +846,15 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                       </td>
 
                       {/* Pinned Our Product Feature Value */}
-                      <td className="py-3 px-4 bg-indigo-50/25 dark:bg-indigo-950/20 border-r border-indigo-100/90 dark:border-indigo-900/50 align-top">
-                        <div className="flex items-start gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                      <td className="py-3.5 px-4 bg-indigo-50/35 dark:bg-indigo-950/25 border-r border-indigo-100/90 dark:border-indigo-900/50 align-top">
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                           <div>
-                            <div className="font-semibold text-slate-900 dark:text-white font-mono text-xs tabular-nums">
+                            <div className="font-bold text-slate-900 dark:text-white font-mono text-xs tabular-nums">
                               {feat.ourValue.value}
                             </div>
                             {isExpanded && feat.ourValue.detailNote && (
-                              <div className="text-[11px] text-indigo-950/75 dark:text-indigo-200/80 mt-1">
+                              <div className="text-[11px] text-indigo-950/80 dark:text-indigo-200/80 mt-1">
                                 {feat.ourValue.detailNote}
                               </div>
                             )}
@@ -776,24 +872,26 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                         return (
                           <td
                             key={`${comp.id}-${feat.id}`}
-                            className="py-3 px-4 border-r last:border-r-0 border-slate-200/70 dark:border-slate-800 align-top"
+                            className="py-3.5 px-4 border-r last:border-r-0 border-slate-200/70 dark:border-slate-800 align-top"
                           >
                             <div className="font-medium text-slate-800 dark:text-slate-200 font-mono text-xs tabular-nums">
                               {cell.value}
                             </div>
                             {cell.advantage === 'ours' && (
-                              <div className="mt-0.5 text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
-                                {ourProduct.name} Advantage
-                              </div>
+                              <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/60 text-[10px] font-semibold">
+                                <Sparkles className="w-2.5 h-2.5" />
+                                <span>{ourProduct.name} Advantage</span>
+                              </span>
                             )}
                             {cell.advantage === 'theirs' && (
-                              <div className="mt-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-                                Competitor Edge (See Landmine)
-                              </div>
+                              <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60 text-[10px] font-semibold">
+                                <ShieldAlert className="w-2.5 h-2.5" />
+                                <span>Competitor Edge (See Landmine)</span>
+                              </span>
                             )}
 
                             {isExpanded && cell.detailNote && (
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800">
                                 {cell.detailNote}
                               </div>
                             )}
@@ -832,19 +930,19 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.16 }}
               onClick={() => setInspectedDiff(null)}
-              className="fixed inset-0 bg-slate-950/45 backdrop-blur-xs"
+              className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs"
             />
             <motion.aside
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 380, damping: 34 }}
-              className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 h-full border-l border-slate-200 dark:border-slate-800 p-6 shadow-2xl flex flex-col justify-between overflow-y-auto"
+              className="relative z-10 w-full max-w-md bg-white dark:bg-[#0E1422] h-full border-l border-slate-200 dark:border-slate-800 p-6 shadow-2xl flex flex-col justify-between overflow-y-auto"
             >
               <div className="space-y-5">
                 <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
                   <div>
-                    <div className="text-xs font-mono text-amber-700 dark:text-amber-400 tabular-nums">
+                    <div className="text-xs font-mono font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
                       {inspectedDiff.diff.dateLabel} · {inspectedDiff.diff.impactLevel}
                     </div>
                     <h3
@@ -865,7 +963,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                 </div>
 
                 {/* Before -> After Visual Diff Box */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-xl flex items-center justify-between gap-4 font-mono text-xs tabular-nums">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-between gap-4 font-mono text-xs tabular-nums">
                   <div>
                     <div className="text-[10px] text-slate-400">PREVIOUS VALUE</div>
                     <div className="line-through text-slate-500 dark:text-slate-400 mt-1 font-medium">
@@ -892,7 +990,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                 </div>
 
                 {/* Grounded Citation Card */}
-                <div className="p-3.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800 rounded-xl space-y-1.5">
+                <div className="p-3.5 bg-slate-50/80 dark:bg-slate-900/70 border border-slate-200/70 dark:border-slate-800 rounded-xl space-y-1.5">
                   <div className="text-[11px] font-mono text-slate-400">
                     VERIFIED GROUNDING SOURCE
                   </div>
@@ -917,7 +1015,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
                       setInspectedDiff(null);
                       onOpenBattlecardForCompetitor(cId);
                     }}
-                    className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-xl cursor-pointer"
+                    className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl cursor-pointer"
                   >
                     Open Sales Battlecard
                   </button>
