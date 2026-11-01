@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   calculateDisplayedPrice,
+  computeHistoricalPricingTrend,
   computeKpiSummary,
   computeTeamTcoComparison,
   filterFeatureRows,
@@ -119,4 +120,18 @@ test('computeTeamTcoComparison calculates lower TCO for NexusCloud and positive 
   assert.equal(bars[0].isOurProduct, true);
   assert.ok(bars[1].totalMonthlyTco > bars[0].totalMonthlyTco);
   assert.ok(bars[1].annualSavingsVsThis > 0);
+});
+
+test('computeHistoricalPricingTrend produces 6 months of data and reflects Oct 26 price shifts', () => {
+  const trendPro = computeHistoricalPricingTrend(OUR_PRODUCT, INITIAL_COMPETITORS, 'monthly', 'pro');
+  assert.equal(trendPro.length, 6);
+  assert.equal(trendPro[0].month, 'May 26');
+  assert.equal(trendPro[5].month, 'Oct 26');
+  assert.equal(trendPro[0].render, 19);
+  assert.equal(trendPro[5].render, 25);
+  assert.equal(trendPro[5].nexuscloud, 19);
+
+  const trendAnnual = computeHistoricalPricingTrend(OUR_PRODUCT, INITIAL_COMPETITORS, 'annual', 'pro');
+  assert.equal(trendAnnual[5].nexuscloud, 15);
+  assert.equal(trendAnnual[5].render, 20);
 });

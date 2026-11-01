@@ -30,6 +30,7 @@ import {
   filterFeatureRows,
   filterTierIds,
 } from '../utils/pricingMath';
+import { PricingTrendChart } from './PricingTrendChart';
 
 interface PricingMatrixViewProps {
   ourProduct: CompetitorProfile;
@@ -191,6 +192,13 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Recharts 6-Month Base Pricing Trend Comparison Chart */}
+      <PricingTrendChart
+        ourProduct={ourProduct}
+        competitors={competitors}
+        billingCycle={billingCycle}
+      />
+
       {/* Interactive Visual Price & TCO Comparison Chart Strip */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/90 rounded-xl p-4 sm:p-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800/80">

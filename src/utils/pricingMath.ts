@@ -431,3 +431,73 @@ export function computeTeamTcoComparison(
   }));
 }
 
+export interface HistoricalPricingPoint {
+  month: string;
+  annotation?: string;
+  [entityId: string]: string | number | undefined;
+}
+
+/**
+ * Generates a 6-month historical base pricing trend (May 2026 – Oct 2026)
+ * comparing ourProduct and tracked competitors for the active tier (defaults to 'pro' if 'all' or 'starter')
+ * and dynamically scaled by billingCycle (Monthly vs Annual -20%).
+ */
+export function computeHistoricalPricingTrend(
+  ourProduct: CompetitorProfile,
+  competitors: CompetitorProfile[],
+  billingCycle: BillingCycle,
+  trendTier: 'pro' | 'team' = 'pro'
+): HistoricalPricingPoint[] {
+  const months = ['May 26', 'Jun 26', 'Jul 26', 'Aug 26', 'Sep 26', 'Oct 26'];
+  const discount = billingCycle === 'annual' ? 0.8 : 1;
+  const entities = [ourProduct, ...competitors];
+
+  return months.map((month, idx) => {
+    const point: HistoricalPricingPoint = { month };
+
+    for (const entity of entities) {
+      const tierObj = entity.tiers[trendTier];
+      const currentMonthly = tierObj.monthlyPrice ?? 20;
+
+      // Determine historical price before recent Oct/Sep hikes
+      let historicalMonthly = currentMonthly;
+      if (entity.id === 'render') {
+        if (trendTier === 'pro') {
+          historicalMonthly = idx < 5 ? 19 : 25; // Hiked $19 -> $25 in Oct
+        } else {
+          historicalMonthly = idx < 5 ? 29 : 39; // Hiked $29 -> $39 in Oct
+        }
+      } else if (entity.id === 'vercel') {
+        if (trendTier === 'pro') {
+          historicalMonthly = idx < 2 ? 18 : 20;
+        } else {
+          historicalMonthly = idx < 4 ? 50 : idx === 4 ? 55 : 65; // Unbundled Drains/WAF -> $65
+        }
+      } else if (entity.id === 'flyio') {
+        if (trendTier === 'pro') {
+          historicalMonthly = idx < 3 ? 24 : 29;
+        } else {
+          historicalMonthly = idx < 3 ? 149 : 199;
+        }
+      } else if (entity.id !== ourProduct.id) {
+        // Any newly scanned competitor (e.g., Railway)
+        const prevMatch = tierObj.diff?.previousValue?.match(/\$(\d+)/);
+        const oldVal = prevMatch ? parseInt(prevMatch[1], 10) : Math.max(5, currentMonthly - 5);
+        historicalMonthly = idx < 4 ? oldVal : currentMonthly;
+      }
+
+      point[entity.id] = Math.round(historicalMonthly * discount);
+    }
+
+    if (idx === 5) {
+      point.annotation =
+        trendTier === 'pro'
+          ? 'Oct 26: Render hiked Pro +31% ($19→$25); NexusCloud held $19 & doubled egress to 1 TB'
+          : 'Oct 26: Vercel effective Team spend rose +30% ($50→$65); Render Org rose +34% ($29→$39)';
+    }
+
+    return point;
+  });
+}
+
+
