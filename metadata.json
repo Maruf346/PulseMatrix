@@ -1,0 +1,6 @@
+{
+  "name": "PulseMatrix — AI Competitor Pricing & Sales Battlecard Intelligence",
+  "description": "Real-time B2B SaaS competitor pricing matrix, weekly change radar, and AI sales battlecard intelligence powered by Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
