@@ -79,6 +79,14 @@ export const OUR_PRODUCT: CompetitorProfile = {
       includedSummary: 'BYOC AWS/GCP deployment, HIPAA BAA, dedicated TAM, 15-min SLA',
     },
   },
+  pricingHistory: [
+    { month: 'May 26', starter: 0, pro: 19, team: 49, enterprise: 850 },
+    { month: 'Jun 26', starter: 0, pro: 19, team: 49, enterprise: 850 },
+    { month: 'Jul 26', starter: 0, pro: 19, team: 49, enterprise: 850 },
+    { month: 'Aug 26', starter: 0, pro: 19, team: 49, enterprise: 850 },
+    { month: 'Sep 26', starter: 0, pro: 19, team: 49, enterprise: 850 },
+    { month: 'Oct 26', starter: 0, pro: 19, team: 49, enterprise: 850, note: 'Doubled Pro egress to 1 TB at $19/seat' },
+  ],
   features: {
     'feat-bandwidth': {
       value: '1 TB included (then $0.04/GB)',
@@ -305,6 +313,14 @@ export const INITIAL_COMPETITORS: CompetitorProfile[] = [
         includedSummary: 'SAML SSO, 99.99% SLA, Secure Compute VPC, custom WAF rules',
       },
     },
+    pricingHistory: [
+      { month: 'May 26', starter: 0, pro: 18, team: 50, enterprise: 2500 },
+      { month: 'Jun 26', starter: 0, pro: 18, team: 50, enterprise: 2500 },
+      { month: 'Jul 26', starter: 0, pro: 20, team: 50, enterprise: 2500 },
+      { month: 'Aug 26', starter: 0, pro: 20, team: 50, enterprise: 2500 },
+      { month: 'Sep 26', starter: 0, pro: 20, team: 55, enterprise: 2500 },
+      { month: 'Oct 26', starter: 0, pro: 20, team: 65, enterprise: 2500, note: 'Unbundled Log Drains & Observability Plus (+30% effective Team spend)' },
+    ],
     features: {
       'feat-bandwidth': {
         value: '1 TB included (then $0.15/GB+)',
@@ -530,6 +546,14 @@ export const INITIAL_COMPETITORS: CompetitorProfile[] = [
         includedSummary: 'SAML SSO, HIPAA BAA, 99.95% SLA, dedicated support engineer',
       },
     },
+    pricingHistory: [
+      { month: 'May 26', starter: 0, pro: 19, team: 29, enterprise: 1500 },
+      { month: 'Jun 26', starter: 0, pro: 19, team: 29, enterprise: 1500 },
+      { month: 'Jul 26', starter: 0, pro: 19, team: 29, enterprise: 1500 },
+      { month: 'Aug 26', starter: 0, pro: 19, team: 29, enterprise: 1500 },
+      { month: 'Sep 26', starter: 0, pro: 19, team: 29, enterprise: 1500 },
+      { month: 'Oct 26', starter: 0, pro: 25, team: 39, enterprise: 1500, note: 'Hiked Pro seats $19→$25 (+31.5%) and Org seats $29→$39 (+34%)' },
+    ],
     features: {
       'feat-bandwidth': {
         value: '500 GB included on Pro (then $0.10/GB)',
@@ -718,6 +742,14 @@ export const INITIAL_COMPETITORS: CompetitorProfile[] = [
         includedSummary: '99.99% SLA, SAML SSO, dedicated Slack channel',
       },
     },
+    pricingHistory: [
+      { month: 'May 26', starter: 5, pro: 24, team: 149, enterprise: 2000 },
+      { month: 'Jun 26', starter: 5, pro: 24, team: 149, enterprise: 2000 },
+      { month: 'Jul 26', starter: 5, pro: 24, team: 149, enterprise: 2000 },
+      { month: 'Aug 26', starter: 5, pro: 29, team: 199, enterprise: 2000 },
+      { month: 'Sep 26', starter: 5, pro: 29, team: 199, enterprise: 2000 },
+      { month: 'Oct 26', starter: 5, pro: 29, team: 199, enterprise: 2000, note: 'Launch ($29) & Scale ($199) base plans + GPU reservations restricted' },
+    ],
     features: {
       'feat-bandwidth': {
         value: '0 GB included ($0.02/GB NA/EU, $0.12/GB APAC/IN)',

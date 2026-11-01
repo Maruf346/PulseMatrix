@@ -81,6 +81,15 @@ export interface CompetitorBattlecard {
   presetObjections: PresetObjection[];
 }
 
+export interface PricingHistoryEntry {
+  month: string;
+  starter: number;
+  pro: number;
+  team: number;
+  enterprise?: number;
+  note?: string;
+}
+
 export interface CompetitorProfile {
   id: string;
   name: string;
@@ -91,6 +100,7 @@ export interface CompetitorProfile {
   winRateAgainst: number;
   winRateDelta: string;
   tiers: Record<TierId, TierPricing>;
+  pricingHistory?: PricingHistoryEntry[];
   features: Record<string, FeatureValue>;
   battlecard: CompetitorBattlecard;
 }

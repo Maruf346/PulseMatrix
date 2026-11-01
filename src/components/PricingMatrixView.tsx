@@ -197,6 +197,7 @@ export const PricingMatrixView: React.FC<PricingMatrixViewProps> = ({
         ourProduct={ourProduct}
         competitors={competitors}
         billingCycle={billingCycle}
+        selectedTier={selectedTier}
       />
 
       {/* Interactive Visual Price & TCO Comparison Chart Strip */}

@@ -16,6 +16,7 @@ interface PricingTrendChartProps {
   ourProduct: CompetitorProfile;
   competitors: CompetitorProfile[];
   billingCycle: BillingCycle;
+  selectedTier?: 'all' | 'starter' | 'pro' | 'team' | 'enterprise';
 }
 
 const SERIES_PALETTE = [
@@ -30,15 +31,21 @@ export const PricingTrendChart: React.FC<PricingTrendChartProps> = ({
   ourProduct,
   competitors,
   billingCycle,
+  selectedTier = 'all',
 }) => {
-  const [trendTier, setTrendTier] = useState<'pro' | 'team'>('pro');
+  const [trendTier, setTrendTier] = useState<'starter' | 'pro' | 'team'>('pro');
   const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(() => new Set());
+
+  const activeTier: 'starter' | 'pro' | 'team' =
+    selectedTier === 'starter' || selectedTier === 'pro' || selectedTier === 'team'
+      ? selectedTier
+      : trendTier;
 
   const trendData = computeHistoricalPricingTrend(
     ourProduct,
     competitors,
     billingCycle,
-    trendTier
+    activeTier
   );
 
   const toggleSeries = (id: string) => {
@@ -86,9 +93,22 @@ export const PricingTrendChart: React.FC<PricingTrendChartProps> = ({
           >
             <button
               type="button"
+              data-testid="trend-tier-starter"
+              onClick={() => setTrendTier('starter')}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTier === 'starter'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Starter Base
+            </button>
+            <button
+              type="button"
+              data-testid="trend-tier-pro"
               onClick={() => setTrendTier('pro')}
               className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                trendTier === 'pro'
+                activeTier === 'pro'
                   ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold shadow-2xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
@@ -97,9 +117,10 @@ export const PricingTrendChart: React.FC<PricingTrendChartProps> = ({
             </button>
             <button
               type="button"
+              data-testid="trend-tier-team"
               onClick={() => setTrendTier('team')}
               className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                trendTier === 'team'
+                activeTier === 'team'
                   ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold shadow-2xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
@@ -211,7 +232,7 @@ export const PricingTrendChart: React.FC<PricingTrendChartProps> = ({
                 return (
                   <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-xl text-xs space-y-1.5">
                     <div className="font-mono font-semibold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-1">
-                      {label} · {trendTier.toUpperCase()} Base Rate ({billingCycle})
+                      {label} · {activeTier.toUpperCase()} Base Rate ({billingCycle})
                     </div>
                     {payload.map((entry) => (
                       <div
