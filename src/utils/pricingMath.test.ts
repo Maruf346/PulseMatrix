@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   calculateDisplayedPrice,
   computeKpiSummary,
+  computeTeamTcoComparison,
   filterFeatureRows,
   filterTierIds,
   formatBattlecardMarkdown,
@@ -110,4 +111,12 @@ test('formatBattlecardMarkdown and generateSalesAlertEmailDraft produce rich out
   assert.ok(email.subject.includes(INITIAL_RADAR_EVENTS[0].competitorName));
   assert.ok(email.body.includes(INITIAL_RADAR_EVENTS[0].beforeValue));
   assert.ok(email.body.includes(INITIAL_RADAR_EVENTS[0].afterValue));
+});
+
+test('computeTeamTcoComparison calculates lower TCO for NexusCloud and positive annual savings', () => {
+  const bars = computeTeamTcoComparison(OUR_PRODUCT, INITIAL_COMPETITORS, 'monthly', 15, 2);
+  assert.equal(bars.length, 4);
+  assert.equal(bars[0].isOurProduct, true);
+  assert.ok(bars[1].totalMonthlyTco > bars[0].totalMonthlyTco);
+  assert.ok(bars[1].annualSavingsVsThis > 0);
 });

@@ -344,3 +344,90 @@ SUGGESTED PROSPECT TALKING POINT:
 — Sent via PulseMatrix Competitive Intelligence`,
   };
 }
+
+export interface TeamTcoBarItem {
+  id: string;
+  name: string;
+  isOurProduct: boolean;
+  seatCost: number;
+  bandwidthOverageCost: number;
+  addonsCost: number;
+  totalMonthlyTco: number;
+  percentOfMax: number;
+  annualSavingsVsThis: number;
+}
+
+/**
+ * Computes interactive side-by-side Monthly TCO for a given team size (seats) and outbound bandwidth (TB)
+ * on Pro/Team tiers, accounting for billingCycle (Monthly vs Annual -20%).
+ */
+export function computeTeamTcoComparison(
+  ourProduct: CompetitorProfile,
+  competitors: CompetitorProfile[],
+  billingCycle: BillingCycle,
+  teamSize: number = 12,
+  monthlyBandwidthTb: number = 2
+): TeamTcoBarItem[] {
+  const entities = [ourProduct, ...competitors];
+  const discount = billingCycle === 'annual' ? 0.8 : 1;
+
+  const rawItems = entities.map((entity) => {
+    const isOurs = entity.id === ourProduct.id;
+    const baseSeatPrice = Math.round((entity.tiers.pro.monthlyPrice ?? 20) * discount);
+    const seatCost = baseSeatPrice * teamSize;
+
+    // Parse included bandwidth & per-GB overage from entity id / features
+    let includedGb = 500;
+    let overagePerGb = 0.10;
+    let addonsCost = 0;
+
+    if (isOurs) {
+      includedGb = 1000;
+      overagePerGb = 0.04;
+      addonsCost = 0; // Unlimited builds + 30d logs included
+    } else if (entity.id === 'vercel') {
+      includedGb = 1000;
+      overagePerGb = 0.15;
+      addonsCost = teamSize >= 8 ? 100 : 60; // Log drains ($60) + extra build slot ($40)
+    } else if (entity.id === 'render') {
+      includedGb = 500;
+      overagePerGb = 0.10;
+      addonsCost = teamSize >= 8 ? 85 : 45; // Unbundled HA Postgres + build minutes pack
+    } else if (entity.id === 'flyio') {
+      includedGb = 0;
+      overagePerGb = 0.06;
+      addonsCost = 95; // Base Launch/Scale fee + dedicated IPs + managed DB overhead
+    } else {
+      includedGb = 500;
+      overagePerGb = 0.08;
+      addonsCost = 65;
+    }
+
+    const totalGb = monthlyBandwidthTb * 1000;
+    const extraGb = Math.max(0, totalGb - includedGb);
+    const bandwidthOverageCost = Math.round(extraGb * overagePerGb);
+    const totalMonthlyTco = seatCost + bandwidthOverageCost + addonsCost;
+
+    return {
+      id: entity.id,
+      name: entity.name,
+      isOurProduct: isOurs,
+      seatCost,
+      bandwidthOverageCost,
+      addonsCost,
+      totalMonthlyTco,
+    };
+  });
+
+  const maxTco = Math.max(...rawItems.map((i) => i.totalMonthlyTco), 1);
+  const ourTco = rawItems[0]?.totalMonthlyTco ?? 0;
+
+  return rawItems.map((item) => ({
+    ...item,
+    percentOfMax: Math.max(12, Math.round((item.totalMonthlyTco / maxTco) * 100)),
+    annualSavingsVsThis: item.isOurProduct
+      ? 0
+      : Math.max(0, (item.totalMonthlyTco - ourTco) * 12),
+  }));
+}
+

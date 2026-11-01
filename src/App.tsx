@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, ExternalLink, X } from 'lucide-react';
 import {
   BillingCycle,
@@ -32,6 +33,30 @@ export default function App() {
   const [radarEvents, setRadarEvents] =
     useState<RadarChangeEvent[]>(INITIAL_RADAR_EVENTS);
 
+  // Dashboard shell & dual-theme state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('pulsematrix_theme') === 'dark';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDarkMode) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    try {
+      localStorage.setItem('pulsematrix_theme', isDarkMode ? 'dark' : 'light');
+    } catch {
+      // ignore storage errors
+    }
+  }, [isDarkMode]);
+
   // Matrix & global filter state
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [selectedTier, setSelectedTier] = useState<TierId | 'all'>('all');
@@ -44,7 +69,7 @@ export default function App() {
   const [selectedBattlecardCompetitorId, setSelectedBattlecardCompetitorId] =
     useState<string>(INITIAL_COMPETITORS[0].id);
 
-  // Live Scan Modal state & notification banner
+  // Live Scan Drawer state & notification banner
   const [isScanModalOpen, setIsScanModalOpen] = useState<boolean>(false);
   const [lastScannedBanner, setLastScannedBanner] = useState<{
     competitorName: string;
@@ -111,9 +136,9 @@ export default function App() {
   return (
     <div
       id="top"
-      className="min-h-screen bg-[#F8FAFC] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-50/60 via-white to-slate-50 text-slate-900 flex flex-col"
+      className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-150"
     >
-      {/* Sticky Glass Top Header */}
+      {/* Collapsible Left Sidebar + Workspace Top Bar Shell */}
       <TopHeader
         activeTab={activeTab}
         onSelectTab={setActiveTab}
@@ -124,152 +149,198 @@ export default function App() {
         onSearchChange={setSearchQuery}
         onOpenScanModal={() => setIsScanModalOpen(true)}
         changesCount7d={kpiSummary.changesDetected7d}
+        competitors={competitors}
+        selectedCompetitorId={selectedBattlecardCompetitorId}
+        onQuickJumpCompetitor={handleOpenBattlecardForCompetitor}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={() => setIsSidebarCollapsed((p) => !p)}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode((p) => !p)}
       />
 
-      {/* Main Content Container */}
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Live Scan Completion Notification Banner */}
-        {lastScannedBanner && (
-          <div className="mb-5 p-4 bg-white/95 backdrop-blur-xl border border-emerald-200/90 rounded-2xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start sm:items-center gap-2.5 text-xs">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
-              <div>
-                <span className="font-semibold text-slate-900">
-                  Live Gemini Scan Completed for {lastScannedBanner.competitorName}:
-                </span>{' '}
-                <span className="text-slate-600">
-                  Added pricing tiers, 12 feature benchmarks, weekly diff alerts, and sales battlecard.
-                </span>
-                {lastScannedBanner.sources.length > 0 && (
-                  <span className="ml-2 inline-flex items-center gap-2">
-                    {lastScannedBanner.sources.slice(0, 2).map((s) => (
-                      <a
-                        key={s.uri}
-                        href={s.uri}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-indigo-600 hover:underline font-mono"
-                      >
-                        <span>{s.title}</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    ))}
-                  </span>
-                )}
-              </div>
-            </div>
+      {/* Main Content Viewport offset by Sidebar width on Desktop */}
+      <div
+        className={`flex-1 flex flex-col transition-[padding] duration-200 ${
+          isSidebarCollapsed ? 'md:pl-[68px]' : 'md:pl-64'
+        }`}
+      >
+        <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-5">
+          {/* Live Scan Completion Notification Banner */}
+          <AnimatePresence>
+            {lastScannedBanner && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="mb-4 p-3.5 bg-white dark:bg-slate-900 border border-emerald-300/90 dark:border-emerald-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div className="flex items-start sm:items-center gap-2.5 text-xs">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
+                  <div>
+                    <span className="font-semibold text-slate-900 dark:text-white">
+                      Live Gemini Scan Completed for {lastScannedBanner.competitorName}:
+                    </span>{' '}
+                    <span className="text-slate-600 dark:text-slate-300">
+                      Added pricing tiers, 12 feature benchmarks, weekly diff alerts, and sales battlecard.
+                    </span>
+                    {lastScannedBanner.sources.length > 0 && (
+                      <span className="ml-2 inline-flex items-center gap-2">
+                        {lastScannedBanner.sources.slice(0, 2).map((s) => (
+                          <a
+                            key={s.uri}
+                            href={s.uri}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline font-mono"
+                          >
+                            <span>{s.title}</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleOpenBattlecardForCompetitor(lastScannedBanner.competitorId)
+                    }
+                    className="px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 rounded-xl cursor-pointer"
+                  >
+                    Inspect {lastScannedBanner.competitorName} Battlecard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLastScannedBanner(null)}
+                    aria-label="Dismiss scan notification"
+                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* 4-Card KPI Summary Ribbon */}
+          <KpiRibbon
+            kpi={kpiSummary}
+            competitorNames={competitors.map((c) => c.name)}
+            onNavigateTab={setActiveTab}
+            onActivateChangedThisWeek={handleActivateChangedThisWeek}
+          />
+
+          {/* Smooth View Crossfade with Framer Motion */}
+          <AnimatePresence mode="wait">
+            {activeTab === 'matrix' && (
+              <motion.div
+                key="view-matrix"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.16 }}
+              >
+                <PricingMatrixView
+                  ourProduct={ourProductForWorkspace}
+                  competitors={competitors}
+                  features={INITIAL_FEATURES}
+                  billingCycle={billingCycle}
+                  onBillingCycleChange={setBillingCycle}
+                  selectedTier={selectedTier}
+                  onSelectTier={setSelectedTier}
+                  selectedCategory={selectedCategory}
+                  onSelectCategory={setSelectedCategory}
+                  changedOnly={changedOnly}
+                  onToggleChangedOnly={setChangedOnly}
+                  searchQuery={searchQuery}
+                  onResetFilters={handleResetMatrixFilters}
+                  onOpenBattlecardForCompetitor={handleOpenBattlecardForCompetitor}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'battlecards' && (
+              <motion.div
+                key="view-battlecards"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.16 }}
+              >
+                <BattlecardsView
+                  ourProduct={ourProductForWorkspace}
+                  competitors={competitors}
+                  selectedCompetitorId={selectedBattlecardCompetitorId}
+                  onSelectCompetitorId={setSelectedBattlecardCompetitorId}
+                  billingCycle={billingCycle}
+                  searchQuery={searchQuery}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'radar' && (
+              <motion.div
+                key="view-radar"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.16 }}
+              >
+                <ChangeRadarView
+                  events={radarEvents}
+                  ourProductName={ourProductForWorkspace.name}
+                  searchQuery={searchQuery}
+                  onOpenBattlecardForCompetitor={handleOpenBattlecardForCompetitor}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
+
+        {/* Quiet Minimal Footer */}
+        <footer className="border-t border-slate-200/70 dark:border-slate-800/80 bg-white/50 dark:bg-slate-900/50 py-3.5 px-4 sm:px-6 mt-10">
+          <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <div>
+              PulseMatrix · Competitive Pricing & Revenue Enablement Workspace
+            </div>
+            <div className="flex items-center gap-4">
               <button
                 type="button"
-                onClick={() =>
-                  handleOpenBattlecardForCompetitor(lastScannedBanner.competitorId)
-                }
-                className="px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-xl cursor-pointer"
+                onClick={() => setActiveTab('matrix')}
+                className="hover:text-slate-900 dark:hover:text-white cursor-pointer"
               >
-                Inspect {lastScannedBanner.competitorName} Battlecard
+                Pricing Matrix
               </button>
               <button
                 type="button"
-                onClick={() => setLastScannedBanner(null)}
-                aria-label="Dismiss scan notification"
-                className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                onClick={() => setActiveTab('battlecards')}
+                className="hover:text-slate-900 dark:hover:text-white cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                Battlecards
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('radar')}
+                className="hover:text-slate-900 dark:hover:text-white cursor-pointer"
+              >
+                Change Radar
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsScanModalOpen(true)}
+                className="hover:text-slate-900 dark:hover:text-white font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+              >
+                Run Live Scan
               </button>
             </div>
           </div>
-        )}
+        </footer>
+      </div>
 
-        {/* 4-Card Glossy KPI Summary Ribbon */}
-        <KpiRibbon
-          kpi={kpiSummary}
-          competitorNames={competitors.map((c) => c.name)}
-          onNavigateTab={setActiveTab}
-          onActivateChangedThisWeek={handleActivateChangedThisWeek}
-        />
-
-        {/* Core View Switcher Content */}
-        {activeTab === 'matrix' && (
-          <PricingMatrixView
-            ourProduct={ourProductForWorkspace}
-            competitors={competitors}
-            features={INITIAL_FEATURES}
-            billingCycle={billingCycle}
-            onBillingCycleChange={setBillingCycle}
-            selectedTier={selectedTier}
-            onSelectTier={setSelectedTier}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-            changedOnly={changedOnly}
-            onToggleChangedOnly={setChangedOnly}
-            searchQuery={searchQuery}
-            onResetFilters={handleResetMatrixFilters}
-            onOpenBattlecardForCompetitor={handleOpenBattlecardForCompetitor}
-          />
-        )}
-
-        {activeTab === 'battlecards' && (
-          <BattlecardsView
-            ourProduct={ourProductForWorkspace}
-            competitors={competitors}
-            selectedCompetitorId={selectedBattlecardCompetitorId}
-            onSelectCompetitorId={setSelectedBattlecardCompetitorId}
-            billingCycle={billingCycle}
-            searchQuery={searchQuery}
-          />
-        )}
-
-        {activeTab === 'radar' && (
-          <ChangeRadarView
-            events={radarEvents}
-            ourProductName={ourProductForWorkspace.name}
-            searchQuery={searchQuery}
-            onOpenBattlecardForCompetitor={handleOpenBattlecardForCompetitor}
-          />
-        )}
-      </main>
-
-      {/* Quiet Minimal Footer */}
-      <footer className="border-t border-slate-200/70 bg-white/60 py-4 px-4 sm:px-6 lg:px-8 mt-12">
-        <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
-          <div>
-            PulseMatrix · Competitive Pricing & Revenue Enablement Workspace
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setActiveTab('matrix')}
-              className="hover:text-slate-900 cursor-pointer"
-            >
-              Pricing Matrix
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('battlecards')}
-              className="hover:text-slate-900 cursor-pointer"
-            >
-              Battlecards
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('radar')}
-              className="hover:text-slate-900 cursor-pointer"
-            >
-              Change Radar
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsScanModalOpen(true)}
-              className="hover:text-slate-900 font-medium text-slate-700 cursor-pointer"
-            >
-              Run Live Scan
-            </button>
-          </div>
-        </div>
-      </footer>
-
-      {/* Live AI Competitor Scan Modal */}
+      {/* Slide-Over Right Live AI Competitor Scan Drawer */}
       <LiveScanModal
         isOpen={isScanModalOpen}
         onClose={() => setIsScanModalOpen(false)}
